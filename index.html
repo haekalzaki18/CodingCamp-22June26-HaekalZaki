@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Expense &amp; Budget Visualizer</title>
+
+  <!-- ============================================================
+       Anti-FOUC inline script (Task 20.2)
+       Must run before any CSS/content paints, so the correct theme
+       is applied immediately and there is no flash of the wrong theme.
+       Fallback chain: localStorage -> prefers-color-scheme -> light
+       Traced requirements: 11.4, 11.5
+       ============================================================ -->
+  <script>
+    (function () {
+      try {
+        var stored = JSON.parse(localStorage.getItem('expense_theme'));
+        var theme = (stored === 'light' || stored === 'dark')
+          ? stored
+          : (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches
+              ? 'dark'
+              : 'light');
+        document.documentElement.setAttribute('data-theme', theme);
+      } catch (e) {
+        document.documentElement.setAttribute('data-theme', 'light');
+      }
+    })();
+  </script>
+
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+
+  <header>
+    <h1>Expense &amp; Budget Visualizer</h1>
+
+    <div class="header-right">
+      <p class="total-label">Total Expenses: <span id="total-amount">Rp 0</span></p>
+      <button type="button" id="theme-toggle" aria-label="Switch to dark mode">🌙</button>
+    </div>
+  </header>
+
+  <main>
+
+    <!-- Input Section -->
+    <section class="input-section">
+      <h2>Add Transaction</h2>
+      <form id="transaction-form" novalidate>
+
+        <div class="form-group">
+          <label for="item-name">Item Name</label>
+          <input
+            type="text"
+            id="item-name"
+            name="itemName"
+            placeholder="e.g. Nasi Goreng"
+            autocomplete="off"
+          />
+        </div>
+
+        <div class="form-group">
+          <label for="amount">Amount (Rp)</label>
+          <input
+            type="number"
+            id="amount"
+            name="amount"
+            placeholder="e.g. 25000"
+            min="1"
+          />
+        </div>
+
+        <div class="form-group">
+          <label for="category">Category</label>
+          <select id="category" name="category">
+            <option value="">-- Select Category --</option>
+            <option value="Food">Food</option>
+            <option value="Transport">Transport</option>
+            <option value="Fun">Fun</option>
+          </select>
+          <button type="button" id="add-category-btn">+ Add Category</button>
+          <div id="add-category-panel" hidden>
+            <input type="text" id="new-category-input" maxlength="20" placeholder="Category name (max 20 chars)" />
+            <button type="button" id="confirm-category-btn">Confirm</button>
+            <button type="button" id="cancel-category-btn">Cancel</button>
+            <div class="error-message" id="category-error" role="alert"></div>
+          </div>
+          <div id="custom-category-list"></div>
+        </div>
+
+        <div class="error-messages" role="alert" aria-live="assertive"></div>
+
+        <button type="submit">Add Transaction</button>
+
+      </form>
+    </section>
+
+    <!-- Monthly Summary Section (Task 18.3) -->
+    <section id="monthly-summary" aria-label="Monthly Summary">
+      <h2>Monthly Summary</h2>
+      <div class="summary-grid">
+        <div class="summary-item">
+          <span class="summary-label">Total This Month</span>
+          <span class="summary-value" id="monthly-total">Rp 0</span>
+        </div>
+        <div class="summary-item">
+          <span class="summary-label">Transactions</span>
+          <span class="summary-value" id="monthly-count">0</span>
+        </div>
+        <div class="summary-item">
+          <span class="summary-label">Average / Transaction</span>
+          <span class="summary-value" id="monthly-average">Rp 0</span>
+        </div>
+        <div class="summary-item">
+          <span class="summary-label">Top Category</span>
+          <span class="summary-value" id="monthly-top-category">–</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- Budget Limit Section (Task 19.4) -->
+    <section id="budget-section" aria-label="Budget Limit">
+      <h2>Monthly Budget</h2>
+
+      <div id="budget-input-area">
+        <label for="budget-limit-input">Set monthly budget limit (Rp)</label>
+        <div class="budget-input-row">
+          <input type="number" id="budget-limit-input" min="1" placeholder="e.g. 1000000" />
+          <button type="button" id="set-budget-btn">Set Limit</button>
+        </div>
+        <div class="error-message" id="budget-error" role="alert"></div>
+      </div>
+
+      <div id="budget-progress-container" hidden>
+        <div id="budget-progress-track" role="progressbar" aria-label="Budget usage">
+          <div id="budget-progress-bar" class="state-green" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
+        </div>
+        <p id="budget-overflow-msg" hidden></p>
+      </div>
+    </section>
+
+    <!-- Data Section -->
+    <section class="data-section">
+
+      <div class="list-panel">
+        <h2>Transaction List</h2>
+        <ul id="transaction-list" aria-label="Transaction list">
+          <!-- Transactions rendered here by RenderEngine -->
+        </ul>
+      </div>
+
+      <div class="chart-panel">
+        <h2>Expense Distribution</h2>
+        <div class="chart-container">
+          <canvas
+            id="expense-chart"
+            aria-label="Expense Distribution Chart"
+            role="img"
+          ></canvas>
+          <div class="chart-overlay" aria-live="polite"></div>
+        </div>
+      </div>
+
+    </section>
+
+  </main>
+
+  <footer>
+    <p>&copy; 2024 Expense &amp; Budget Visualizer. Data tersimpan di browser Anda.</p>
+  </footer>
+
+  <!-- Chart.js via CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+
+  <!-- App logic -->
+  <script src="js/app.js" defer></script>
+
+</body>
+</html>

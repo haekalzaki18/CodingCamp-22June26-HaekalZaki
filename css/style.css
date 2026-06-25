@@ -1,0 +1,980 @@
+/* ============================================================
+   css/style.css — Expense & Budget Visualizer
+   Responsive range: 320px – 1440px
+   ============================================================ */
+
+/* ── 1. Reset & Box Model ─────────────────────────────────── */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+/* ── 2. Design Tokens ─────────────────────────────────────── */
+:root,
+[data-theme="light"] {
+  --color-bg:           #f5f7fa;
+  --color-surface:      #ffffff;
+  --color-border:       #dde1e9;
+  --color-text:         #1a1d23;
+  --color-text-muted:   #6b7280;
+  --color-accent:       #4f46e5;       /* indigo-600 */
+  --color-accent-hover: #4338ca;       /* indigo-700 */
+  --color-accent-focus: #c7d2fe;       /* indigo-200 */
+  --color-error-bg:     #fef2f2;
+  --color-error-border: #fca5a5;
+  --color-error-text:   #b91c1c;
+  --color-delete:       #dc2626;
+  --color-delete-hover: #b91c1c;
+
+  --font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+  --font-size-base: 1rem;             /* 16px */
+  --line-height: 1.6;
+
+  --radius-sm:  4px;
+  --radius-md:  8px;
+  --radius-lg:  12px;
+
+  --shadow-card: 0 1px 4px rgba(0, 0, 0, 0.08), 0 2px 12px rgba(0, 0, 0, 0.06);
+
+  --space-xs:  0.25rem;   /*  4px */
+  --space-sm:  0.5rem;    /*  8px */
+  --space-md:  1rem;      /* 16px */
+  --space-lg:  1.5rem;    /* 24px */
+  --space-xl:  2rem;      /* 32px */
+  --space-2xl: 3rem;      /* 48px */
+
+  --max-width: 1200px;
+  --transition: 150ms ease;
+}
+
+/* ── 2b. Dark Theme Tokens  (Task 20.1) ───────────────────────
+   Traced requirements: 11.2
+   ──────────────────────────────────────────────────────────── */
+[data-theme="dark"] {
+  --color-bg:           #14161a;
+  --color-surface:      #1d2026;
+  --color-border:       #2e323b;
+  --color-text:         #e9eaec;
+  --color-text-muted:   #9aa0aa;
+  --color-accent:       #818cf8;       /* indigo-400 */
+  --color-accent-hover: #a5b4fc;       /* indigo-300 */
+  --color-accent-focus: #312e81;       /* indigo-900 */
+  --color-error-bg:     #2a1414;
+  --color-error-border: #7f1d1d;
+  --color-error-text:   #fca5a5;
+  --color-delete:       #f87171;
+  --color-delete-hover: #fca5a5;
+
+  --shadow-card: 0 1px 4px rgba(0, 0, 0, 0.4), 0 2px 12px rgba(0, 0, 0, 0.3);
+}
+
+/* Smooth transition on every themed element when data-theme flips.
+   Traced requirements: 11.2 (200–400ms transition on color/background) */
+*,
+*::before,
+*::after {
+  transition: background-color 250ms ease, color 250ms ease, border-color 250ms ease;
+}
+
+/* ── 3. Base / Typography ─────────────────────────────────── */
+html {
+  font-size: 16px;
+  scroll-behavior: smooth;
+}
+
+body {
+  font-family: var(--font-family);
+  font-size: var(--font-size-base);
+  line-height: var(--line-height);
+  color: var(--color-text);
+  background-color: var(--color-bg);
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+h1 {
+  font-size: clamp(1.25rem, 4vw, 1.75rem);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+h2 {
+  font-size: clamp(1rem, 3vw, 1.25rem);
+  font-weight: 600;
+  margin-bottom: var(--space-md);
+}
+
+ul {
+  list-style: none;
+}
+
+/* ── 4. Header ────────────────────────────────────────────── */
+header {
+  background-color: var(--color-surface);
+  border-bottom: 1px solid var(--color-border);
+  padding: var(--space-md) var(--space-lg);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+  align-items: flex-start;
+}
+
+@media (min-width: 480px) {
+  header {
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+  }
+}
+
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+}
+
+.total-label {
+  font-size: 0.9375rem;
+  color: var(--color-text-muted);
+  white-space: nowrap;
+}
+
+.total-label #total-amount {
+  font-size: 1.125rem;
+  font-weight: 700;
+  color: var(--color-accent);
+}
+
+/* Theme toggle button (Task 20.3) */
+#theme-toggle {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  font-size: 1.125rem;
+  line-height: 1;
+  background-color: var(--color-bg);
+  border: 1.5px solid var(--color-border);
+  border-radius: 50%;
+  cursor: pointer;
+  outline: none;
+  transition: background-color var(--transition), border-color var(--transition), transform 150ms ease;
+}
+
+#theme-toggle:hover {
+  border-color: var(--color-accent);
+}
+
+#theme-toggle:active {
+  transform: scale(0.92);
+}
+
+#theme-toggle:focus-visible {
+  box-shadow: 0 0 0 3px var(--color-accent-focus);
+}
+
+/* ── 5. Main Wrapper ──────────────────────────────────────── */
+main {
+  flex: 1;
+  width: 100%;
+  max-width: var(--max-width);
+  margin: 0 auto;
+  padding: var(--space-lg) var(--space-md);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xl);
+}
+
+/* ── 6. Input Section ─────────────────────────────────────── */
+.input-section {
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: var(--space-lg);
+  box-shadow: var(--shadow-card);
+}
+
+/* ── 7. Form ──────────────────────────────────────────────── */
+#transaction-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+}
+
+@media (min-width: 600px) {
+  #transaction-form {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    grid-template-rows: auto auto auto;
+    column-gap: var(--space-md);
+    row-gap: var(--space-md);
+  }
+
+  .error-messages {
+    grid-column: 1 / -1;
+  }
+
+  #transaction-form button[type="submit"] {
+    grid-column: 1 / -1;
+  }
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+}
+
+.form-group label {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--color-text);
+}
+
+.form-group input,
+.form-group select {
+  width: 100%;
+  padding: 0.5625rem var(--space-sm);
+  font-size: var(--font-size-base);
+  font-family: inherit;
+  color: var(--color-text);
+  background-color: var(--color-surface);
+  border: 1.5px solid var(--color-border);
+  border-radius: var(--radius-md);
+  outline: none;
+  transition: border-color var(--transition), box-shadow var(--transition);
+  appearance: none;
+  -webkit-appearance: none;
+}
+
+.form-group select {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%236b7280' stroke-width='1.5' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 0.75rem center;
+  padding-right: 2.25rem;
+  cursor: pointer;
+}
+
+.form-group input:focus,
+.form-group select:focus {
+  border-color: var(--color-accent);
+  box-shadow: 0 0 0 3px var(--color-accent-focus);
+}
+
+.form-group input::placeholder {
+  color: var(--color-text-muted);
+  opacity: 1;
+}
+
+.form-group input[type="number"]::-webkit-inner-spin-button,
+.form-group input[type="number"]::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  appearance: none;
+}
+.form-group input[type="number"] {
+  -moz-appearance: textfield;
+  appearance: textfield;
+}
+
+#transaction-form button[type="submit"] {
+  align-self: flex-start;
+  padding: 0.625rem var(--space-xl);
+  font-size: var(--font-size-base);
+  font-family: inherit;
+  font-weight: 600;
+  color: #fff;
+  background-color: var(--color-accent);
+  border: none;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: background-color var(--transition), transform var(--transition);
+  outline: none;
+}
+
+#transaction-form button[type="submit"]:hover {
+  background-color: var(--color-accent-hover);
+}
+
+#transaction-form button[type="submit"]:focus-visible {
+  box-shadow: 0 0 0 3px var(--color-accent-focus);
+}
+
+#transaction-form button[type="submit"]:active {
+  transform: scale(0.98);
+}
+
+@media (max-width: 599px) {
+  #transaction-form button[type="submit"] {
+    width: 100%;
+    align-self: stretch;
+  }
+}
+
+/* ── 8. Error Messages ────────────────────────────────────── */
+.error-messages {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+}
+
+.error-messages:empty {
+  display: none;
+}
+
+.error-messages p,
+.error-messages span,
+.error-messages div {
+  padding: var(--space-sm) var(--space-md);
+  background-color: var(--color-error-bg);
+  border: 1px solid var(--color-error-border);
+  border-radius: var(--radius-sm);
+  color: var(--color-error-text);
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.error-messages:not(:empty) {
+  padding: var(--space-sm) var(--space-md);
+  background-color: var(--color-error-bg);
+  border: 1px solid var(--color-error-border);
+  border-radius: var(--radius-sm);
+  color: var(--color-error-text);
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+/* ── 9. Data Section (two-panel layout) ───────────────────── */
+.data-section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-lg);
+}
+
+@media (min-width: 768px) {
+  .data-section {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    align-items: start;
+    gap: var(--space-lg);
+  }
+}
+
+/* ── 10. List Panel ───────────────────────────────────────── */
+.list-panel {
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: var(--space-lg);
+  box-shadow: var(--shadow-card);
+  display: flex;
+  flex-direction: column;
+}
+
+#transaction-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+  max-height: 420px;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-border) transparent;
+}
+
+#transaction-list::-webkit-scrollbar {
+  width: 6px;
+}
+
+#transaction-list::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+#transaction-list::-webkit-scrollbar-thumb {
+  background-color: var(--color-border);
+  border-radius: 3px;
+}
+
+/* ── 11. Transaction List Items ───────────────────────────── */
+#transaction-list li {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  padding: var(--space-sm) var(--space-md);
+  background-color: var(--color-bg);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  transition: border-color var(--transition);
+}
+
+#transaction-list li:hover {
+  border-color: var(--color-accent);
+}
+
+#transaction-list li .item-name {
+  flex: 1;
+  font-weight: 500;
+  font-size: 0.9375rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+#transaction-list li .item-amount {
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: var(--color-accent);
+  white-space: nowrap;
+}
+
+#transaction-list li .item-category {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px var(--space-sm);
+  font-size: 0.75rem;
+  font-weight: 600;
+  border-radius: 999px;
+  white-space: nowrap;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.item-category[data-category="Food"],
+.item-category.category-food {
+  background-color: #fef9c3;
+  color: #854d0e;
+}
+
+.item-category[data-category="Transport"],
+.item-category.category-transport {
+  background-color: #dbeafe;
+  color: #1e40af;
+}
+
+.item-category[data-category="Fun"],
+.item-category.category-fun {
+  background-color: #fce7f3;
+  color: #9d174d;
+}
+
+#transaction-list li .delete-btn {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border: none;
+  border-radius: var(--radius-sm);
+  background-color: transparent;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  font-size: 1rem;
+  line-height: 1;
+  transition: background-color var(--transition), color var(--transition);
+  outline: none;
+}
+
+#transaction-list li .delete-btn:hover {
+  background-color: #fee2e2;
+  color: var(--color-delete);
+}
+
+#transaction-list li .delete-btn:focus-visible {
+  box-shadow: 0 0 0 3px #fca5a5;
+}
+
+/* ── 12. Empty State ──────────────────────────────────────── */
+#transaction-list li.empty-state,
+#transaction-list .empty-state {
+  justify-content: center;
+  padding: var(--space-xl);
+  font-size: 0.9375rem;
+  color: var(--color-text-muted);
+  border: 1.5px dashed var(--color-border);
+  background-color: transparent;
+  text-align: center;
+  cursor: default;
+}
+
+#transaction-list li.empty-state:hover {
+  border-color: var(--color-border);
+}
+
+/* ── 13. Chart Panel ──────────────────────────────────────── */
+.chart-panel {
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: var(--space-lg);
+  box-shadow: var(--shadow-card);
+  display: flex;
+  flex-direction: column;
+}
+
+/* ── 14. Chart Container ──────────────────────────────────── */
+.chart-container {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  max-height: 380px;
+}
+
+.chart-container canvas {
+  max-width: 100%;
+  max-height: 100%;
+}
+
+.chart-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.9375rem;
+  color: var(--color-text-muted);
+  font-weight: 500;
+  pointer-events: none;
+}
+
+.chart-overlay:empty {
+  display: none;
+}
+
+/* ── 15. Footer ───────────────────────────────────────────── */
+footer {
+  background-color: var(--color-surface);
+  border-top: 1px solid var(--color-border);
+  padding: var(--space-md) var(--space-lg);
+  text-align: center;
+  font-size: 0.8125rem;
+  color: var(--color-text-muted);
+}
+
+/* ── 16. Responsive Overrides ─────────────────────────────── */
+
+@media (max-width: 479px) {
+  main {
+    padding: var(--space-md) var(--space-sm);
+    gap: var(--space-lg);
+  }
+
+  .input-section,
+  .list-panel,
+  .chart-panel,
+  #monthly-summary,
+  #budget-section {
+    padding: var(--space-md);
+  }
+
+  header {
+    padding: var(--space-sm) var(--space-md);
+  }
+
+  #transaction-list {
+    max-height: 320px;
+  }
+
+  #transaction-list li {
+    flex-wrap: wrap;
+  }
+
+  #transaction-list li .item-name {
+    flex: 0 0 calc(100% - 36px);
+    white-space: normal;
+  }
+}
+
+@media (min-width: 768px) and (max-width: 1023px) {
+  main {
+    padding: var(--space-lg);
+  }
+
+  #transaction-list {
+    max-height: 360px;
+  }
+}
+
+@media (min-width: 1024px) {
+  main {
+    padding: var(--space-xl) var(--space-lg);
+  }
+
+  #transaction-list {
+    max-height: 460px;
+  }
+
+  .chart-container {
+    max-height: 420px;
+  }
+}
+
+@media (min-width: 1441px) {
+  main {
+    max-width: var(--max-width);
+  }
+}
+
+/* ── 17. Custom Category UI ───────────────────────────────── */
+
+#add-category-btn {
+  align-self: flex-start;
+  margin-top: var(--space-xs);
+  padding: 0.375rem var(--space-sm);
+  font-size: 0.8125rem;
+  font-family: inherit;
+  font-weight: 500;
+  color: var(--color-accent);
+  background-color: transparent;
+  border: 1.5px solid var(--color-accent);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: background-color var(--transition), color var(--transition);
+  outline: none;
+  line-height: 1.4;
+}
+
+#add-category-btn:hover {
+  background-color: var(--color-accent);
+  color: #fff;
+}
+
+#add-category-btn:focus-visible {
+  box-shadow: 0 0 0 3px var(--color-accent-focus);
+}
+
+#add-category-panel {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-sm);
+  margin-top: var(--space-sm);
+  padding: var(--space-sm) var(--space-md);
+  background-color: var(--color-bg);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+}
+
+#add-category-panel[hidden] {
+  display: none;
+}
+
+#new-category-input {
+  flex: 1 1 160px;
+  padding: 0.4375rem var(--space-sm);
+  font-size: 0.875rem;
+  font-family: inherit;
+  color: var(--color-text);
+  background-color: var(--color-surface);
+  border: 1.5px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  outline: none;
+  transition: border-color var(--transition), box-shadow var(--transition);
+}
+
+#new-category-input:focus {
+  border-color: var(--color-accent);
+  box-shadow: 0 0 0 3px var(--color-accent-focus);
+}
+
+#new-category-input::placeholder {
+  color: var(--color-text-muted);
+  opacity: 1;
+}
+
+#confirm-category-btn,
+#cancel-category-btn {
+  flex-shrink: 0;
+  padding: 0.4375rem var(--space-md);
+  font-size: 0.8125rem;
+  font-family: inherit;
+  font-weight: 500;
+  border: none;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  outline: none;
+  transition: background-color var(--transition);
+}
+
+#confirm-category-btn {
+  color: #fff;
+  background-color: var(--color-accent);
+}
+
+#confirm-category-btn:hover {
+  background-color: var(--color-accent-hover);
+}
+
+#confirm-category-btn:focus-visible {
+  box-shadow: 0 0 0 3px var(--color-accent-focus);
+}
+
+#cancel-category-btn {
+  color: var(--color-text-muted);
+  background-color: var(--color-border);
+}
+
+#cancel-category-btn:hover {
+  background-color: #c8cdd6;
+}
+
+#cancel-category-btn:focus-visible {
+  box-shadow: 0 0 0 3px var(--color-accent-focus);
+}
+
+#category-error {
+  flex: 0 0 100%;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--color-error-text);
+  min-height: 0;
+}
+
+#category-error:empty {
+  display: none;
+}
+
+#custom-category-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-xs);
+  margin-top: var(--space-sm);
+}
+
+#custom-category-list:empty {
+  display: none;
+}
+
+.category-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.25rem 0.5rem 0.25rem 0.625rem;
+  background-color: #e0e7ff;
+  color: #3730a3;
+  border-radius: 999px;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  line-height: 1.3;
+  max-width: 180px;
+}
+
+[data-theme="dark"] .category-pill {
+  background-color: #312e81;
+  color: #c7d2fe;
+}
+
+.pill-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.remove-category-btn {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  padding: 0;
+  font-size: 1rem;
+  line-height: 1;
+  color: #6366f1;
+  background-color: transparent;
+  border: none;
+  border-radius: 50%;
+  cursor: pointer;
+  transition: background-color var(--transition), color var(--transition);
+  outline: none;
+}
+
+.remove-category-btn:hover {
+  background-color: #fecaca;
+  color: var(--color-delete);
+}
+
+.remove-category-btn:focus-visible {
+  box-shadow: 0 0 0 2px var(--color-accent-focus);
+}
+
+/* ── 18. Monthly Summary  (Task 18.3) ─────────────────────────
+   Traced requirements: 9.2
+   ──────────────────────────────────────────────────────────── */
+#monthly-summary {
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: var(--space-lg);
+  box-shadow: var(--shadow-card);
+}
+
+.summary-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--space-md);
+}
+
+@media (min-width: 600px) {
+  .summary-grid {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+.summary-item {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+  padding: var(--space-md);
+  background-color: var(--color-bg);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+}
+
+.summary-label {
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.summary-value {
+  font-size: 1.125rem;
+  font-weight: 700;
+  color: var(--color-text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ── 19. Budget Limit  (Task 19.4) ────────────────────────────
+   Traced requirements: 10.1, 10.2, 10.6
+   ──────────────────────────────────────────────────────────── */
+#budget-section {
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: var(--space-lg);
+  box-shadow: var(--shadow-card);
+}
+
+#budget-input-area label {
+  display: block;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--color-text);
+  margin-bottom: var(--space-xs);
+}
+
+.budget-input-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-sm);
+}
+
+#budget-limit-input {
+  flex: 1 1 180px;
+  padding: 0.5625rem var(--space-sm);
+  font-size: var(--font-size-base);
+  font-family: inherit;
+  color: var(--color-text);
+  background-color: var(--color-surface);
+  border: 1.5px solid var(--color-border);
+  border-radius: var(--radius-md);
+  outline: none;
+  transition: border-color var(--transition), box-shadow var(--transition);
+}
+
+#budget-limit-input:focus {
+  border-color: var(--color-accent);
+  box-shadow: 0 0 0 3px var(--color-accent-focus);
+}
+
+#set-budget-btn {
+  flex-shrink: 0;
+  padding: 0.5625rem var(--space-lg);
+  font-size: 0.9375rem;
+  font-family: inherit;
+  font-weight: 600;
+  color: #fff;
+  background-color: var(--color-accent);
+  border: none;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: background-color var(--transition);
+  outline: none;
+}
+
+#set-budget-btn:hover {
+  background-color: var(--color-accent-hover);
+}
+
+#set-budget-btn:focus-visible {
+  box-shadow: 0 0 0 3px var(--color-accent-focus);
+}
+
+#budget-error {
+  margin-top: var(--space-xs);
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--color-error-text);
+  min-height: 0;
+}
+
+#budget-error:empty {
+  display: none;
+}
+
+#budget-progress-container {
+  margin-top: var(--space-lg);
+}
+
+#budget-progress-container[hidden] {
+  display: none;
+}
+
+#budget-progress-track {
+  width: 100%;
+  height: 14px;
+  background-color: var(--color-bg);
+  border: 1px solid var(--color-border);
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+#budget-progress-bar {
+  height: 100%;
+  width: 0%;
+  border-radius: 999px;
+  transition: width 250ms ease, background-color 250ms ease;
+}
+
+/* Progress bar color states — Task 19.4 */
+#budget-progress-bar.state-green {
+  background-color: #4CAF50;
+}
+#budget-progress-bar.state-yellow {
+  background-color: #FFC107;
+}
+#budget-progress-bar.state-red {
+  background-color: #F44336;
+}
+
+#budget-overflow-msg {
+  margin-top: var(--space-sm);
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--color-delete);
+}
+
+#budget-overflow-msg[hidden] {
+  display: none;
+}
