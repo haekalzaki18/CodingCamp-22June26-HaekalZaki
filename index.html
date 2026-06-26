@@ -29,10 +29,19 @@
   </script>
 
   <link rel="stylesheet" href="css/style.css" />
+
+  <!-- Joyful & Playful theme fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;600;700;800&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+
 </head>
 <body>
 
   <header>
+    <div class="header-blob header-blob-1" aria-hidden="true"></div>
+    <div class="header-blob header-blob-2" aria-hidden="true"></div>
+
     <h1>Expense &amp; Budget Visualizer</h1>
 
     <div class="header-right">
@@ -143,7 +152,22 @@
     <section class="data-section">
 
       <div class="list-panel">
-        <h2>Transaction List</h2>
+        <div class="list-panel-header">
+          <h2>Transaction List</h2>
+          <button type="button" id="export-csv-btn" aria-label="Export transactions as CSV">⭳ Export CSV</button>
+        </div>
+
+        <div class="search-row">
+          <input
+            type="text"
+            id="search-input"
+            placeholder="Search by item name or category…"
+            aria-label="Search transactions"
+            autocomplete="off"
+          />
+          <button type="button" id="clear-search-btn" aria-label="Clear search" hidden>×</button>
+        </div>
+
         <ul id="transaction-list" aria-label="Transaction list">
           <!-- Transactions rendered here by RenderEngine -->
         </ul>

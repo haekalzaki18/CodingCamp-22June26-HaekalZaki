@@ -188,6 +188,9 @@ const TransactionStore = {
     const stamped = { ...transaction, createdAt: Date.now() };
     transactions.push(stamped);
     StorageModule.save(transactions);
+    // Mark this transaction so RenderEngine plays a one-time entrance
+    // animation on its row (extension: fade/slide-in on add).
+    lastAddedTransactionId = stamped.id;
   },
 
   remove(id) {
@@ -270,6 +273,149 @@ function formatCurrency(amount) {
     currency: 'IDR',
     minimumFractionDigits: 0,
   }).format(amount);
+}
+
+// ---------------------------------------------------------------------------
+// Search / Filter  (extension)
+// In-memory search query for the transaction list. Matched against
+// itemName and category, case-insensitive, on every render.
+// ---------------------------------------------------------------------------
+
+/** @type {string} */
+let searchQuery = '';
+
+/**
+ * Return the current search query string.
+ *
+ * @returns {string}
+ */
+function getSearchQuery() {
+  return searchQuery;
+}
+
+/**
+ * Track the id of the most recently added transaction so RenderEngine
+ * can apply a one-time entrance animation to that row.
+ *
+ * @type {string|null}
+ */
+let lastAddedTransactionId = null;
+
+/**
+ * Build the empty-state <li> shown in the transaction list.
+ *
+ * Two variants:
+ *   - "no-data": no transactions exist at all yet (first-time use)
+ *   - "no-results": transactions exist, but none match the search query
+ *
+ * @param {'no-data'|'no-results'} variant
+ * @param {string} [query] - the active search query, used for "no-results" copy
+ * @returns {HTMLLIElement}
+ */
+function buildEmptyState(variant, query) {
+  const li = document.createElement('li');
+  li.className = 'empty-state';
+
+  const icon = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+  icon.setAttribute('viewBox', '0 0 64 64');
+  icon.setAttribute('class', 'empty-state-icon');
+  icon.setAttribute('aria-hidden', 'true');
+
+  if (variant === 'no-results') {
+    icon.innerHTML =
+      '<circle cx="27" cy="27" r="16" fill="none" stroke="currentColor" stroke-width="3"/>' +
+      '<line x1="38" y1="38" x2="52" y2="52" stroke="currentColor" stroke-width="4" stroke-linecap="round"/>';
+
+    const title = document.createElement('p');
+    title.className = 'empty-state-title';
+    title.textContent = 'No matching transactions';
+
+    const subtitle = document.createElement('p');
+    subtitle.className = 'empty-state-subtitle';
+    subtitle.textContent = query ? `Nothing found for "${query}"` : 'Try a different search term';
+
+    li.appendChild(icon);
+    li.appendChild(title);
+    li.appendChild(subtitle);
+    return li;
+  }
+
+  // "no-data" — wallet/receipt illustration
+  icon.innerHTML =
+    '<rect x="8" y="20" width="48" height="32" rx="4" fill="none" stroke="currentColor" stroke-width="3"/>' +
+    '<path d="M8 28h48" stroke="currentColor" stroke-width="3"/>' +
+    '<circle cx="44" cy="36" r="4" fill="currentColor"/>' +
+    '<path d="M20 12h24" stroke="currentColor" stroke-width="3" stroke-linecap="round"/>';
+
+  const title = document.createElement('p');
+  title.className = 'empty-state-title';
+  title.textContent = 'No transactions yet';
+
+  const subtitle = document.createElement('p');
+  subtitle.className = 'empty-state-subtitle';
+  subtitle.textContent = 'Catat pengeluaran pertamamu di form sebelah';
+
+  li.appendChild(icon);
+  li.appendChild(title);
+  li.appendChild(subtitle);
+  return li;
+}
+
+// ---------------------------------------------------------------------------
+// CSV Export  (extension)
+// Builds a CSV file from all current transactions and triggers a download.
+// ---------------------------------------------------------------------------
+
+/**
+ * Escape a value for safe inclusion in a CSV field: wraps the value in
+ * double quotes and doubles any internal quote characters.
+ *
+ * @param {string|number} value
+ * @returns {string}
+ */
+function csvEscape(value) {
+  const str = String(value);
+  return `"${str.replace(/"/g, '""')}"`;
+}
+
+/**
+ * Build a CSV string from the current transactions and trigger a
+ * browser download named "transactions.csv".
+ *
+ * Columns: Item Name, Amount, Category, Date
+ * Amount is exported as a raw number (no currency formatting) so the
+ * file stays spreadsheet-friendly.
+ *
+ * @returns {void}
+ */
+function exportTransactionsToCSV() {
+  const txns = TransactionStore.getAll();
+
+  const header = ['Item Name', 'Amount', 'Category', 'Date'].map(csvEscape).join(',');
+
+  const rows = txns.map((tx) => {
+    const dateStr = tx.createdAt ? new Date(tx.createdAt).toISOString() : '';
+    return [
+      csvEscape(tx.itemName),
+      csvEscape(tx.amount),
+      csvEscape(tx.category === '' ? 'Uncategorized' : tx.category),
+      csvEscape(dateStr),
+    ].join(',');
+  });
+
+  const csvContent = [header, ...rows].join('\r\n');
+
+  // Prepend a UTF-8 BOM so Excel renders accented/Indonesian characters correctly
+  const blob = new Blob(['\uFEFF' + csvContent], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = `transactions-${new Date().toISOString().slice(0, 10)}.csv`;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
 }
 
 // ---------------------------------------------------------------------------
@@ -444,23 +590,47 @@ const ThemeController = {
 // ---------------------------------------------------------------------------
 
 const RenderEngine = {
+  /**
+   * Render the transaction list, optionally filtered by the current
+   * search query (matched against itemName and category, case-insensitive).
+   *
+   * Newly-added transactions get a `.entering` class for a fade/slide-in
+   * animation (see css/style.css §20). Each category badge gets a
+   * `data-category` attribute so CSS can color custom categories too,
+   * not just the three defaults.
+   *
+   * @returns {void}
+   */
   renderTransactionList() {
     const listElement = document.getElementById('transaction-list');
-    const txns = TransactionStore.getAll();
+    const allTxns = TransactionStore.getAll();
+    const query = (typeof getSearchQuery === 'function' ? getSearchQuery() : '').trim().toLowerCase();
+
+    const txns = query
+      ? allTxns.filter((tx) =>
+          tx.itemName.toLowerCase().includes(query) ||
+          tx.category.toLowerCase().includes(query)
+        )
+      : allTxns;
 
     listElement.innerHTML = '';
 
+    if (allTxns.length === 0) {
+      listElement.appendChild(buildEmptyState('no-data'));
+      return;
+    }
+
     if (txns.length === 0) {
-      const emptyMessage = document.createElement('li');
-      emptyMessage.className = 'empty-state';
-      emptyMessage.textContent = 'No transactions yet';
-      listElement.appendChild(emptyMessage);
+      listElement.appendChild(buildEmptyState('no-results', query));
       return;
     }
 
     txns.forEach((tx) => {
       const li = document.createElement('li');
       li.className = 'transaction-item';
+      if (lastAddedTransactionId && tx.id === lastAddedTransactionId) {
+        li.classList.add('entering');
+      }
 
       const itemNameSpan = document.createElement('span');
       itemNameSpan.className = 'item-name';
@@ -472,7 +642,8 @@ const RenderEngine = {
 
       const categorySpan = document.createElement('span');
       categorySpan.className = 'item-category';
-      categorySpan.textContent = tx.category;
+      categorySpan.textContent = tx.category === '' ? 'Uncategorized' : tx.category;
+      categorySpan.setAttribute('data-category', tx.category);
 
       const deleteBtn = document.createElement('button');
       deleteBtn.className = 'delete-btn';
@@ -487,6 +658,10 @@ const RenderEngine = {
 
       listElement.appendChild(li);
     });
+
+    // Clear the "just added" marker after one render pass so the
+    // animation only plays once, right after the transaction is created.
+    lastAddedTransactionId = null;
   },
 
   renderTotalDisplay() {
@@ -921,10 +1096,55 @@ const DeleteButtonController = {
         return;
       }
 
-      TransactionStore.remove(transactionId);
-      RenderEngine.renderAll();
+      // Play a slide-out animation on the row before mutating state, so
+      // the removal feels intentional rather than an instant disappearance.
+      // Respects prefers-reduced-motion via the CSS rule in style.css §20.
+      const row = deleteBtn.closest('.transaction-item');
+      const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+      const finishDelete = () => {
+        TransactionStore.remove(transactionId);
+        RenderEngine.renderAll();
+      };
+
+      if (row && !prefersReducedMotion) {
+        row.classList.add('leaving');
+        row.addEventListener('animationend', finishDelete, { once: true });
+      } else {
+        finishDelete();
+      }
     });
   }
+};
+
+// ---------------------------------------------------------------------------
+// SearchController  (extension)
+// Wires the search input to filter the transaction list live, and the
+// clear (×) button to reset it.
+// ---------------------------------------------------------------------------
+
+const SearchController = {
+  init() {
+    const input = document.getElementById('search-input');
+    const clearBtn = document.getElementById('clear-search-btn');
+    if (!input) return;
+
+    input.addEventListener('input', () => {
+      searchQuery = input.value;
+      if (clearBtn) clearBtn.hidden = searchQuery.length === 0;
+      RenderEngine.renderTransactionList();
+    });
+
+    if (clearBtn) {
+      clearBtn.addEventListener('click', () => {
+        searchQuery = '';
+        input.value = '';
+        clearBtn.hidden = true;
+        input.focus();
+        RenderEngine.renderTransactionList();
+      });
+    }
+  },
 };
 
 // ---------------------------------------------------------------------------
@@ -949,6 +1169,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // 4. Attach delete button event delegation to #transaction-list.
   DeleteButtonController.init();
+
+  // 4b. Wire up the search input (extension).
+  SearchController.init();
+
+  // 4c. Wire up the CSV export button (extension).
+  const exportBtn = document.getElementById('export-csv-btn');
+  if (exportBtn) {
+    exportBtn.addEventListener('click', exportTransactionsToCSV);
+  }
 
   // 5. Initialize theme toggle button icon/state (data-theme already set
   //    by the anti-FOUC inline script in <head> before this point).
